@@ -37,6 +37,7 @@ f(3.0)
 h = 0.00001
 x = 2/3
 (f(x+h)-f(x))/h
+ G
 
 # Pluto notebooks are dynamic, so we can just change x and h above to see different values.
 
@@ -74,8 +75,6 @@ function Base.:(+)(v1::Value, v2::Value)
     out.backward = back
     return out 
 end
-Base.:(+)(v1::Value, v2::Number) = v1 + Value(v2,"n")
-Base.:(+)(v2::Number, v1::Value) = v1 + Value(v2,"n")
 
 function Base.:(*)(v1::Value, v2::Value)
     newlabel = "$(v1.label)*$(v2.label)"
@@ -89,8 +88,6 @@ function Base.:(*)(v1::Value, v2::Value)
     out.backward = back
     return out
 end
-Base.:(*)(v1::Value, v2::Number) = v1 * Value(v2,"n")
-Base.:(*)(v2::Number, v1::Value) = v1 * Value(v2,"n")
 
 function Base.tanh(v::Value)
     x = 2v.data
@@ -105,54 +102,6 @@ function Base.tanh(v::Value)
     out.backward = back
     return out
 end
-
-function Base.exp(v::Value)
-    x = v.data
-    t = exp(x)
-    newlabel = "exp($(v.label))"
-    out = Value(t,0,[v],newlabel,nullf)
-
-    function back()
-        v.grad += t*out.grad
-        return nothing
-    end
-    out.backward = back
-    return out
-end
-
-function Base.:(^)(v::Value, k::Number)
-    x = v.data
-    t = x^k
-    newlabel = "$(v.label)^$k"
-    out = Value(t,0,[v],newlabel,nullf)
-
-    function back()
-        v.grad += k*x^(k-1)*out.grad
-        return nothing
-    end
-    out.backward = back
-    return out
-end
-
-function Base.inv(v::Value)
-    x = v.data
-    t = x^(-1)
-    newlabel = "inv($(v.label))"
-    out = Value(t,0,[v],newlabel,nullf)
-
-    function back()
-        v.grad += -x^(-2)*out.grad
-        return nothing
-    end
-    out.backward = back
-    return out
-end
-
-
-Base.:(/)(v1::Value, v2::Value) = v1*inv(v2)
-Base.:(/)(v1::Value, n::Number) = v1*inv(Value(n,"n"))
-Base.:(/)(n::Number, v::Value) = Value(n,"n")*inv(v)
-
 
 function backprop(root::Value)
     topo = []
@@ -182,6 +131,7 @@ a2 = Value(2.0,"a2")
 b2 = Value(-3.0,"b2")
 c2 = Value(10,"c2")
 
+# ╔═╡ 7df61e85-135b-45fd-941c-ae8212df8a8b
 a2*b2
 d2 = a2*b2+c2
 d2.prev
@@ -261,19 +211,3 @@ b.grad
 x2.grad
 x1.grad
 
-
-
-# Expand capabilities of Value type to support broader array of math
-Value(1) # integer
-a2 + 1
-1 + a2
-a2 * 2
-2 * a2
-
-exp(a2)
-
-a2^2
-a2/b2
-a2 * (1/b2)
-a2 * (b2^(-1))
-a2 / 2
