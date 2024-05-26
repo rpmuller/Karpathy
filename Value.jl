@@ -37,6 +37,21 @@ end
 Base.:(+)(v1::Value, v2::Number) = v1 + Value(v2,"n")
 Base.:(+)(v2::Number, v1::Value) = v1 + Value(v2,"n")
 
+function Base.:(-)(v1::Value, v2::Value)
+    newlabel = "$(v1.label)-$(v2.label)"
+    out = Value(v1.data-v2.data,0,[v1,v2],newlabel,nullf)
+    
+    function back()
+        v1.grad += 1.0 * out.grad
+        v2.grad += 1.0 * out.grad
+        return nothing
+    end
+    out.backward = back
+    return out 
+end
+Base.:(-)(v1::Value, v2::Number) = v1 - Value(v2,"n")
+Base.:(-)(v2::Number, v1::Value) = v1 - Value(v2,"n")
+
 function Base.:(*)(v1::Value, v2::Value)
     newlabel = "$(v1.label)*$(v2.label)"
     out = Value(v1.data*v2.data,0,[v1,v2],newlabel,nullf)
