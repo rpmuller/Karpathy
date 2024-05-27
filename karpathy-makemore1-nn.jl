@@ -61,3 +61,13 @@ end
 println("========")
 println("average neg log likelihood, i.e. loss: $(mean(nll))")
 
+# He's now doing manual optimization of the simple linear net.
+# I'm not going to do all this.
+
+# There's something nice about how torch has both the ability to 
+# create arrays and to apply networks and functions. I like the 
+# fact that Flux is cleaner and just uses Julia arrays, but I 
+# haven't found the analogous capability in Flux.
+
+# The problem with this example is that we don't really know
+# when we're doing a good job, unlike MNIST or linear regression.
