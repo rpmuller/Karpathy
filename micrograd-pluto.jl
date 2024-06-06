@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.40
+# v0.19.42
 
 using Markdown
 using InteractiveUtils
@@ -65,88 +65,58 @@ md"On to more complicated examples."
 # ╔═╡ f5847f31-4f6f-452b-a176-be65cbaa82f1
 md"## Values
 Create a new struct in Julia called `Value` analogous to what AK did in Python. Overload algebraic functions. Keep track of children so we can backprop.
+"
 
-I like the way that Python's classes and dunder methods keep everything together, so I'm mimicing this with a begin...end."
-
-# ╔═╡ 03026a69-a232-4033-8d9a-5f9665fc5477
-"Null function takes no arguments and returns nothing"
-nullf() = nothing
-
-# ╔═╡ a501ebe6-8ccd-4e66-a393-71a5c9d1f888
+# ╔═╡ 0f67282b-e852-44eb-b7c6-d33ee66830cd
 begin
 	mutable struct Value
 		data::Float64
-		grad::Float64
-		prev::Vector{Value}
 		label::String
+		prev::Vector{Value}
+		grad::Float64
 		backward
 	end
-	Value(d) = Value(d,0,[],"",nullf) # Outer constructor
-	Value(d,l) = Value(d,0,[],l,nullf) # data plus label
-	
-	function Base.show(io::IO, v::Value)
-		print(io,"Value($(v.label)=$(round(v.data,digits=3)))")
+	function Value(d::Float64,l::String="",prev::Vector{Value}=[],
+		grad::Float64=0.0,backward=nothing) 
+		Value(d,l,prev,grad,backward)
 	end
-	
-	function Base.:(+)(v1::Value, v2::Value)
-		newlabel = "$(v1.label)+$(v2.label)"
-		out = Value(v1.data+v2.data,0,[v1,v2],newlabel,nullf)
-		
-		function back()
-			v1.grad += 1.0 * out.grad
-			v2.grad += 1.0 * out.grad
-			return nothing
-		end
-		out.backward = back
-		return out 
-	end
+end
 
-	function Base.:(*)(v1::Value, v2::Value)
-		newlabel = "$(v1.label)*$(v2.label)"
-		out = Value(v1.data*v2.data,0,[v1,v2],newlabel,nullf)
 
-		function back()
-			v1.grad += v2.data * out.grad
-			v2.grad += v1.data * out.grad
-			return nothing
-		end
-		out.backward = back
-		return out
-	end
-	
-	function Base.tanh(v::Value)
-		x = 2v.data
-		t = (exp(x)-1)/(exp(x)+1)
-		newlabel = "tanh($(v.label))"
-		out = Value(t,0,[v],newlabel,nullf)
+# ╔═╡ c378aff5-9d9c-4331-9a17-ce6701749453
+Value(2.0)
 
-		function back()
-			v.grad += (1-t^2)*out.grad
-			return nothing
-		end
-		out.backward = back
-		return out
-	end
+# ╔═╡ 0e001c0e-bb93-4416-bb11-988eeef13328
+function Base.show(io::IO, v::Value)
+	print(io,"Value($(v.label)=$(round(v.data,digits=3)))")
+end
 
-	function backprop(root::Value)
-		topo = []
-		visited = Set()
-		function build_topo(v)
-			if v ∉ visited
-				push!(visited,v)
-				for child in v.prev
-					build_topo(child)
-				end
-				push!(topo,v)
-			end
-		end
-		build_topo(root)
-		root.grad = 1
-		for node in reverse(topo)
-			node.backward()
-		end
+# ╔═╡ 884eec83-10de-4c59-905d-9fbaed1c9b2f
+function Base.:(*)(v1::Value, v2::Value)
+	newlabel = "$(v1.label)*$(v2.label)"
+	out = Value(v1.data*v2.data,newlabel,[v1,v2])
+
+	function back()
+		v1.grad += v2.data * out.grad
+		v2.grad += v1.data * out.grad
 		return nothing
 	end
+	out.backward = back
+	return out
+end
+
+# ╔═╡ 4a4d786c-bf61-4e29-bdf2-1678cd479993
+function Base.:(+)(v1::Value, v2::Value)
+	newlabel = "$(v1.label)+$(v2.label)"
+	out = Value(v1.data+v2.data,newlabel,[v1,v2])
+	
+	function back()
+		v1.grad += 1.0 * out.grad
+		v2.grad += 1.0 * out.grad
+		return nothing
+	end
+	out.backward = back
+	return out 
 end
 
 # ╔═╡ bcbecd81-2f40-45f0-93fb-bd70d9899dca
@@ -170,6 +140,42 @@ f(x+h)
 # ╔═╡ 2fcdbebb-47e1-4f77-bd84-f09b40b6b416
 (f(x+h)-f(x))/h
 
+# ╔═╡ 960b8634-07a2-4199-90b2-7500008d629d
+function Base.tanh(v::Value)
+	x = 2v.data
+	t = (exp(x)-1)/(exp(x)+1)
+	newlabel = "tanh($(v.label))"
+	out = Value(t,newlabel,[v])
+
+	function back()
+		v.grad += (1-t^2)*out.grad
+		return nothing
+	end
+	out.backward = back
+	return out
+end
+
+# ╔═╡ e60768b7-c41c-41e3-bc0f-797df1284230
+function backprop(root::Value)
+	topo = []
+	visited = Set()
+	function build_topo(v)
+		if v ∉ visited
+			push!(visited,v)
+			for child in v.prev
+				build_topo(child)
+			end
+			push!(topo,v)
+		end
+	end
+	build_topo(root)
+	root.grad = 1
+	for node in reverse(topo)
+		node.backward()
+	end
+	return nothing
+end
+
 # ╔═╡ dea3118f-9556-4efa-832f-6ed0b2beac2b
 a2 = Value(2.0,"a2")
 
@@ -177,7 +183,10 @@ a2 = Value(2.0,"a2")
 b2 = Value(-3.0,"b2")
 
 # ╔═╡ 1a5484de-6a56-40db-aeda-3f8dfc41a0eb
-c2 = Value(10,"c2")
+c2 = Value(10.0,"c2")
+
+# ╔═╡ f2a4bb75-8977-45fb-aa35-f8f505744715
+a2+b2
 
 # ╔═╡ 7df61e85-135b-45fd-941c-ae8212df8a8b
 a2*b2
@@ -342,7 +351,7 @@ Plots = "~1.40.4"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.2"
+julia_version = "1.10.3"
 manifest_format = "2.0"
 project_hash = "1f6b562a10129213114de4926c72758244801c80"
 
@@ -428,7 +437,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.1.0+0"
+version = "1.1.1+0"
 
 [[deps.Compose]]
 deps = ["Base64", "Colors", "DataStructures", "Dates", "IterTools", "JSON", "LinearAlgebra", "Measures", "Printf", "Random", "Requires", "Statistics", "UUIDs"]
@@ -1479,11 +1488,17 @@ version = "1.4.1+1"
 # ╟─e7e45abb-39be-482d-9401-590ab6cf55c2
 # ╟─47352a37-023b-4b78-92c8-2258c33b8385
 # ╟─f5847f31-4f6f-452b-a176-be65cbaa82f1
-# ╠═03026a69-a232-4033-8d9a-5f9665fc5477
-# ╠═a501ebe6-8ccd-4e66-a393-71a5c9d1f888
+# ╠═0f67282b-e852-44eb-b7c6-d33ee66830cd
+# ╠═c378aff5-9d9c-4331-9a17-ce6701749453
+# ╠═0e001c0e-bb93-4416-bb11-988eeef13328
+# ╠═4a4d786c-bf61-4e29-bdf2-1678cd479993
+# ╠═884eec83-10de-4c59-905d-9fbaed1c9b2f
+# ╠═960b8634-07a2-4199-90b2-7500008d629d
+# ╠═e60768b7-c41c-41e3-bc0f-797df1284230
 # ╠═dea3118f-9556-4efa-832f-6ed0b2beac2b
 # ╠═a5d450e6-acac-47f1-bb0f-93c1e71413c3
 # ╠═1a5484de-6a56-40db-aeda-3f8dfc41a0eb
+# ╠═f2a4bb75-8977-45fb-aa35-f8f505744715
 # ╠═7df61e85-135b-45fd-941c-ae8212df8a8b
 # ╠═4a3be3e6-affa-4c26-a51f-4ae916e5446c
 # ╠═f29de7a3-8b71-4035-9300-ab2d4b73a05f
