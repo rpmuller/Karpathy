@@ -1,6 +1,13 @@
 
+# Karpathy Makemore using Neural Nets
+# This is the second part of the 
+# [First Makemore Lesson](https://www.youtube.com/watch?v=PaCmpygFfXo) which starts around 1 hr in. AK has already built a bigram model for the names app, 
+# and is now extending it using torch arrays and autodiff.
+
 using Plots
-using StatsBase
+using Flux
+using Flux: onehotbatch
+using Statistics, StatsBase
 
 # Read names.txt into words:
 f = open("names.txt","r")

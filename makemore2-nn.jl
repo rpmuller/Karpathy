@@ -1,11 +1,10 @@
+# Karpathy MLP using Neural Nets.
 # Currently at 1:04 in the vid
 # Doing the same work as karpathy-makemore1.jl
 # but using neural nets.
 using Plots
 using Flux
 using Flux: onehot,onehotbatch
-# For future reference, here's how to call onehot:
-#onehot(7,1:10)
 
 xs, ys = [], []
 for word in words[1:1]
