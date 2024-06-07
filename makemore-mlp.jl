@@ -4,16 +4,11 @@
 # The paper uses three previous words to predict a fourth word. It uses a 
 # vocabulary of 17k words, implemented in a 30-dimensional space.
 
-using Plots
 using Flux
 using Flux: softmax, crossentropy
-using Statistics
 
 # Read names.txt into words array:
-f = open("names.txt","r")
-    s = read(f,String)
-close(f)
-words = split(s,"\r\n")
+words = split(read("names.txt",String),"\n")
 
 # Create character embeddings.
 chars = ".abcdefghijklmnopqrstuvwxyz"
@@ -27,33 +22,56 @@ itos = Dict( i => s for (i,s) in enumerate(chars))
 
 # Compile dataset for neural net:
 block_size = 3 # context length: how many chars to we use to predict next one?
-X0,Y = [],[]
-
-for w in words[1:5]
-    println(w)
-    context = ones(Int64,block_size)
-    for ch in string(w,".")
-        ix = stoi[ch]
-        push!(X0,context)
-        push!(Y,ix)
-        println(join(itos[i] for i in context)," ---> ", itos[ix])
-        context = vcat(context[2:end],[ix])
-    end
+function build_dataset(words)
+	X0 = []
+	Y::Array{Int64} = []
+	for w in words
+		context = ones(Int64,block_size)
+		for ch in string(w,".")
+			ix = stoi[ch]
+			push!(X0,context)
+			push!(Y,ix)
+			context = vcat(context[2:end],[ix])
+		end
+	end
+	nrows = length(X0)
+	ncols = length(X0[1])
+	X = zeros(Int64,nrows,ncols)
+	for i in 1:nrows
+    	X[i,:] = X0[i]
+	end
+	return X,Y' # note transpose
 end
 
-# Repack X0 matrix
-nrows = length(X0)
-ncols = length(X0[1])
-X = zeros(Int64,nrows,ncols)
-for i in 1:nrows
-    X[i,:] = X0[i]
-end
+n1 = 8*length(words)÷10
+n2 = 9*length(words)÷10
+Xtr,Ytr = build_dataset(words[1:n1])
+Xdev,Ydev = build_dataset(words[n1:n2])
+Xte,Yte = build_dataset(words[n2:end])
+X,Y = build_dataset(words)
 
 C = randn(27,2)  # Build embedding lookup table C.
+
+emb = C[X,:]
+
 W1 = randn(6,100)
 b1 = randn(100)'
+
+h = tanh.(reshape(emb,(size(emb,1),6))*W1 .+ b1)
+
 W2 = randn(100,27)
-b2 = randn(27)';
+b2 = randn(27)'
+
+logits = h*W2 .+ b2
+
+counts = exp.(logits)
+
+prob = counts./sum(counts,dims=2)
+#sum(prob,dims=2) # Check normalization and sign
+
+softmax(logits)
+
+prob
 params = Flux.params(C,W1,b1,W2,b2)
 
 # Forward pass
