@@ -76,15 +76,10 @@ begin
 		grad::Float64
 		backward
 	end
-	function Value(d::Float64,l::String="",prev::Vector{Value}=[],
-		grad::Float64=0.0,backward=nothing) 
-		Value(d,l,prev,grad,backward)
-	end
+	Value(a::Float64) = Value(a,0,[],0,nothing)
+	Value(a::Float64,l::String) = Value(a,l,[],0,nothing)
 end
 
-
-# ╔═╡ c378aff5-9d9c-4331-9a17-ce6701749453
-Value(2.0)
 
 # ╔═╡ 0e001c0e-bb93-4416-bb11-988eeef13328
 function Base.show(io::IO, v::Value)
@@ -94,7 +89,7 @@ end
 # ╔═╡ 884eec83-10de-4c59-905d-9fbaed1c9b2f
 function Base.:(*)(v1::Value, v2::Value)
 	newlabel = "$(v1.label)*$(v2.label)"
-	out = Value(v1.data*v2.data,newlabel,[v1,v2])
+	out = Value(v1.data*v2.data,newlabel,[v1,v2],0,nothing)
 
 	function back()
 		v1.grad += v2.data * out.grad
@@ -108,7 +103,7 @@ end
 # ╔═╡ 4a4d786c-bf61-4e29-bdf2-1678cd479993
 function Base.:(+)(v1::Value, v2::Value)
 	newlabel = "$(v1.label)+$(v2.label)"
-	out = Value(v1.data+v2.data,newlabel,[v1,v2])
+	out = Value(v1.data+v2.data,newlabel,[v1,v2],0,nothing)
 	
 	function back()
 		v1.grad += 1.0 * out.grad
@@ -145,7 +140,7 @@ function Base.tanh(v::Value)
 	x = 2v.data
 	t = (exp(x)-1)/(exp(x)+1)
 	newlabel = "tanh($(v.label))"
-	out = Value(t,newlabel,[v])
+	out = Value(t,newlabel,[v],0,nothing)
 
 	function back()
 		v.grad += (1-t^2)*out.grad
@@ -1489,7 +1484,6 @@ version = "1.4.1+1"
 # ╟─47352a37-023b-4b78-92c8-2258c33b8385
 # ╟─f5847f31-4f6f-452b-a176-be65cbaa82f1
 # ╠═0f67282b-e852-44eb-b7c6-d33ee66830cd
-# ╠═c378aff5-9d9c-4331-9a17-ce6701749453
 # ╠═0e001c0e-bb93-4416-bb11-988eeef13328
 # ╠═4a4d786c-bf61-4e29-bdf2-1678cd479993
 # ╠═884eec83-10de-4c59-905d-9fbaed1c9b2f
