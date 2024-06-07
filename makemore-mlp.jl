@@ -15,11 +15,6 @@ chars = ".abcdefghijklmnopqrstuvwxyz"
 stoi = Dict( s => i for (i,s) in enumerate(chars))
 itos = Dict( i => s for (i,s) in enumerate(chars))
 
-# We're going to follow what Karpathy does pretty closely. The section of 
-# the FluxML docs called 
-# [Building Simple Models](https://fluxml.ai/Flux.jl/stable/models/basics/#Building-Simple-Models) 
-# gives a good foundation for doing this.
-
 # Compile dataset for neural net:
 block_size = 3 # context length: how many chars to we use to predict next one?
 function build_dataset(words)
@@ -65,12 +60,22 @@ b2 = randn(27)'
 logits = h*W2 .+ b2
 
 counts = exp.(logits)
-
 prob = counts./sum(counts,dims=2)
-#sum(prob,dims=2) # Check normalization and sign
+sum(prob,dims=2) # Check normalization and size
 
-softmax(logits)
+# This isn't the same
+#prob2 = softmax(logits)
+#sum(prob2,dims=1)
 
+# The loss is supposed to be something like:
+# loss = -mean(log.(prob[:,Y])) # negative log likelihood
+# Currently trying to understand whether Julia can make a call like prob[:,Y] and what it means.
+# Karpathy jumps right into minibatches in his cleaned up code.
+# The jupyter notebook crashes when I try to eval prob[:,Y]
+# later he uses crossentropy(logits,Y), which would appear to me to have the wrong dimensions
+
+Y
+prob[:,]
 prob
 params = Flux.params(C,W1,b1,W2,b2)
 
