@@ -8,7 +8,7 @@ using Flux
 using Flux: softmax, crossentropy
 
 # Read names.txt into words array:
-words = split(read("names.txt",String),"\n")
+words = split(read("names.txt",String),"\r\n")
 
 # Create character embeddings.
 chars = ".abcdefghijklmnopqrstuvwxyz"
@@ -43,8 +43,9 @@ n2 = 9*length(words)÷10
 Xtr,Ytr = build_dataset(words[1:n1])
 Xdev,Ydev = build_dataset(words[n1:n2])
 Xte,Yte = build_dataset(words[n2:end])
-X,Y = build_dataset(words)
+X,Y = build_dataset(words[1:100])
 
+# 2 is a hyperparameter - the dimension of the character embedding
 C = randn(27,2)  # Build embedding lookup table C.
 
 emb = C[X,:]
@@ -75,7 +76,7 @@ sum(prob,dims=2) # Check normalization and size
 # later he uses crossentropy(logits,Y), which would appear to me to have the wrong dimensions
 
 Y
-prob[:,]
+prob[:,Y]
 prob
 params = Flux.params(C,W1,b1,W2,b2)
 
