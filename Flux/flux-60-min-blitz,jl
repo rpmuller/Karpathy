@@ -202,17 +202,17 @@ m = Dense(10, 5)
 # We can easily get the parameters of any layer or model with params with
 # `params`.
 
-params(m)
+Flux.params(m)
 
 # This makes it very easy to calculate the gradient for all
 # parameters in a network, even if it has many parameters.
 x = rand(Float32, 10)
 m = Chain(Dense(10, 5, relu), Dense(5, 2), softmax)
 l(x) = Flux.Losses.crossentropy(m(x), [0.5, 0.5])
-grads = gradient(params(m)) do
+grads = gradient(Flux.params(m)) do
     l(x)
 end
-for p in params(m)
+for p in Flux.params(m)
     println(grads[p])
 end
 
@@ -226,7 +226,7 @@ end
 # (note that `Flux.Optimise.update!(x, x̄)` already updates with the negative of x̄`).
 using Flux.Optimise: update!, Descent
 η = 0.1
-for p in params(m)
+for p in Flux.params(m)
   update!(p, η * grads[p])
 end
 
@@ -243,8 +243,8 @@ opt = Descent(0.01)
 # `0.5` for every input of 10 floats. `Flux` defines the `train!` function to do it for us.
 
 data, labels = rand(10, 100), fill(0.5, 2, 100)
-loss(x, y) = Flux.Losses.crossentropy(m(x), y)
-Flux.train!(loss, params(m), [(data,labels)], opt)
+zloss(x, y) = Flux.Losses.crossentropy(m(x), y)
+Flux.train!(zloss, Flux.params(m), [(data,labels)], opt)
 # You don't have to use `train!`. In cases where arbitrary logic might be better suited,
 # you could open up this training loop like so:
 
