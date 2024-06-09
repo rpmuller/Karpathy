@@ -6,6 +6,7 @@
 
 using Flux
 using Flux: softmax, crossentropy
+using Statistics
 
 # Read names.txt into words array:
 words = split(read("names.txt",String),"\r\n")
@@ -64,42 +65,29 @@ counts = exp.(logits)
 prob = counts./sum(counts,dims=2)
 sum(prob,dims=2) # Check normalization and size
 
+prob[:,Y]
+
 # This isn't the same
 #prob2 = softmax(logits)
 #sum(prob2,dims=1)
 
 # The loss is supposed to be something like:
-# loss = -mean(log.(prob[:,Y])) # negative log likelihood
-# Currently trying to understand whether Julia can make a call like prob[:,Y] and what it means.
-# Karpathy jumps right into minibatches in his cleaned up code.
-# The jupyter notebook crashes when I try to eval prob[:,Y]
-# later he uses crossentropy(logits,Y), which would appear to me to have the wrong dimensions
+loss = -mean(log.(prob[:,Y])) # negative log likelihood
 
-Y
-prob[:,Y]
-prob
+# ---- now made respectable :) ----------
+# Consider putting this in a separate file.
+
 params = Flux.params(C,W1,b1,W2,b2)
 
 # Forward pass
-function predict(X)
-    Xemb = hcat(C[X[:,1],:],C[X[:,2],:],C[X[:,3],:]) # Build the embedded input matrix:
-    h = tanh.(Xemb*W1 .+ b1)
+function predict(X,W1,b1,W2,b2)
+	emb = C[X,:]
+	h = tanh.(reshape(emb,(size(emb,1),6))*W1 .+ b1)
     return h*W2 .+ b2
 end
 
-function mloss(X,Y)
-    logits = predict(X)
-    # This should be equivalent to softmax, but Flux's softmax doesn't give the same result:
-    counts = exp.(logits)
-    prob = zeros(Float64,size(counts))
-    for i in 1:size(prob)[1]
-        prob[i,:] = counts[i,:]/sum(counts[i,:])
-    end
-    #prob[1:32,Y] # This is what AK does in Python
-
-    # This should be the same as crossentropy, but Flux's crossentropy doesn't give the same result
-    results = [prob[i,Y[i]] for i in 1:32]  # Here's what does that operation in Julia
-    return -mean(log.(results))
+function mloss(X,Y,W1,b1,W2,b2)
+    logits = predict(X,W1,b1,W2,b2)
+	loss = -mean(log.(prob[:,Y])) # negative log likelihood
+	loss = crossentropy(logits,Y)
 end
-
-gs = gradient((X,Y) -> mloss(X,Y),Flux.params(C,W1,b1,W2,b2))
