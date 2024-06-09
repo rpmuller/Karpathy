@@ -44,7 +44,7 @@ n2 = 9*length(words)÷10
 Xtr,Ytr = build_dataset(words[1:n1])
 Xdev,Ydev = build_dataset(words[n1:n2])
 Xte,Yte = build_dataset(words[n2:end])
-X,Y = build_dataset(words[1:100])
+Xsm,Ysm = build_dataset(words[1:100])
 
 # 2 is a hyperparameter - the dimension of the character embedding
 C = randn(27,2)  # Build embedding lookup table C.
@@ -72,22 +72,7 @@ prob[:,Y]
 #sum(prob2,dims=1)
 
 # The loss is supposed to be something like:
-loss = -mean(log.(prob[:,Y])) # negative log likelihood
+theloss = -mean(log.(prob[:,Y])) # negative log likelihood
 
 # ---- now made respectable :) ----------
 # Consider putting this in a separate file.
-
-params = Flux.params(C,W1,b1,W2,b2)
-
-# Forward pass
-function predict(X,W1,b1,W2,b2)
-	emb = C[X,:]
-	h = tanh.(reshape(emb,(size(emb,1),6))*W1 .+ b1)
-    return h*W2 .+ b2
-end
-
-function mloss(X,Y,W1,b1,W2,b2)
-    logits = predict(X,W1,b1,W2,b2)
-	loss = -mean(log.(prob[:,Y])) # negative log likelihood
-	loss = crossentropy(logits,Y)
-end
