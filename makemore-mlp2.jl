@@ -71,6 +71,7 @@ function predict(X,C,W1,b1,W2,b2)
     return h*W2 .+ b2
 end
 
+# TODO: get cross entropy working below. Currently Y is the wrong shape.
 function mloss(X,Y)
     logits = predict(X,C,W1,b1,W2,b2)
     counts = exp.(logits)
@@ -88,6 +89,8 @@ loss_history = []
 
 epochs = 50
 
+# TODO: get code working with minibatched. Currently works with Xsm, but runs 
+# out of memory for larger inputs.
 Xin,Yin = Xsm,Ysm
 #data = (Xin,Yin) # no minibatches
 #loader = DataLoader((Xin,Yin),batchsize=50,partial=false)
