@@ -7,7 +7,6 @@
 # This is the second part of the file, after the 
 # "now made respectable" comment
 
-
 using Flux
 using Flux: train!, params, gradient, crossentropy, softmax, DataLoader
 using Statistics
@@ -17,7 +16,7 @@ embedding_depth = 2    # dimension of the character embedding
 block_size = 3         # context length: how many chars to we use to predict next one?
 
 # Read names.txt into words array:
-words = split(read("names.txt",String),"\r\n")
+words = split(read("names.txt",String),"\n")
 
 # Create character embeddings.
 chars = ".abcdefghijklmnopqrstuvwxyz"
@@ -46,24 +45,6 @@ function build_dataset(words)
 	return X,Y' # note transpose
 end
 
-n1 = 8*length(words)÷10
-n2 = 9*length(words)÷10
-Xtr,Ytr = build_dataset(words[1:n1])
-Xdev,Ydev = build_dataset(words[n1:n2])
-Xte,Yte = build_dataset(words[n2:end])
-Xsm,Ysm = build_dataset(words[1:100])
-
-C = randn(27,embedding_depth)  # Build embedding lookup table C.
-
-W1 = randn(6,100)
-b1 = randn(100)'
-
-W2 = randn(100,27)
-b2 = randn(27)'
-
-
-ps = Flux.params(C,W1,b1,W2,b2)
-
 # Forward pass
 function predict(X,C,W1,b1,W2,b2)
 	emb = C[X,:]
@@ -82,6 +63,24 @@ function mloss(X,Y)
     return loss
 end
 
+n1 = 8*length(words)÷10
+n2 = 9*length(words)÷10
+Xtr,Ytr = build_dataset(words[1:n1])
+Xdev,Ydev = build_dataset(words[n1:n2])
+Xte,Yte = build_dataset(words[n2:end])
+Xsm,Ysm = build_dataset(words[1:100])
+
+C = randn(27,embedding_depth)  # Build embedding lookup table C.
+
+W1 = randn(6,100)
+b1 = randn(100)'
+
+W2 = randn(100,27)
+b2 = randn(27)'
+
+
+ps = Flux.params(C,W1,b1,W2,b2)
+
 learning_rate = 0.01
 opt = ADAM(learning_rate)
 
@@ -91,9 +90,9 @@ epochs = 50
 
 # TODO: get code working with minibatched. Currently works with Xsm, but runs 
 # out of memory for larger inputs.
-Xin,Yin = Xsm,Ysm
+Xin,Yin = Xdev,Ydev
 #data = (Xin,Yin) # no minibatches
-#loader = DataLoader((Xin,Yin),batchsize=50,partial=false)
+#data = DataLoader((Xin,Yin),batchsize=50,partial=false)
 for epoch in 1:epochs
     train!(mloss, ps, [(Xin,Yin)], opt)
     train_loss = mloss(Xin, Yin)
