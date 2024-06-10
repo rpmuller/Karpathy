@@ -90,11 +90,13 @@ epochs = 50
 
 # TODO: get code working with minibatched. Currently works with Xsm, but runs 
 # out of memory for larger inputs.
-Xin,Yin = Xdev,Ydev
-#data = (Xin,Yin) # no minibatches
-#data = DataLoader((Xin,Yin),batchsize=50,partial=false)
+Xin,Yin = Xsm,Ysm
+size(Xin)
+size(Yin)
+#data = [(Xin,Yin)] # no minibatches
+data = DataLoader((Xin,Yin),batchsize=50,partial=false)
 for epoch in 1:epochs
-    train!(mloss, ps, [(Xin,Yin)], opt)
+    train!(mloss, ps, data, opt)
     train_loss = mloss(Xin, Yin)
     push!(loss_history, train_loss)
     println("Epoch = $epoch: Training Loss = $train_loss")
