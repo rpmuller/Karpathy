@@ -106,3 +106,18 @@ mloss(Xtr,Ytr)
 mloss(Xdev,Ydev)
 mloss(Xte,Yte)
 
+C
+
+function sample()
+	out = []
+	context = ones(Int64,block_size)
+	while true
+		emb = C[context,] #???
+		logits = predict(emb,C, W1, b1, W2, b2)
+		probs = Flux.softmax(logits)
+		ix = #how do I do the multinomial sample ?
+		push!(out,ix)
+		if ix == 1 break end
+	end
+	return [itos[i] for i in out]
+end
