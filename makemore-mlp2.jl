@@ -15,7 +15,7 @@ embedding_depth = 2    # dimension of the character embedding
 block_size = 3         # context length: how many chars to we use to predict next one?
 
 # Read names.txt into words array:
-words = split(read("names.txt",String),"\n")
+words = split(read("names.txt",String),"\r\n")
 
 # Create character embeddings.
 chars = ".abcdefghijklmnopqrstuvwxyz"
@@ -41,7 +41,8 @@ function build_dataset(words)
 	for i in 1:nrows
     	X[i,:] = X0[i]
 	end
-	return X,Y' # note transpose
+	return X,Vector(Y) # note transpose
+	#return X,Y' # note transpose
 end
 
 # Forward pass
@@ -51,15 +52,13 @@ function predict(X,C,W1,b1,W2,b2)
     return h*W2 .+ b2
 end
 
-# TODO: get cross entropy working below. Currently Y is the wrong shape.
 function mloss(X,Y)
-    logits = predict(X,C,W1,b1,W2,b2)
-    counts = exp.(logits)
-    prob = counts./sum(counts,dims=2)
-
-	loss = -mean(log.(prob[:,Y])) # negative log likelihood
-	#loss = crossentropy(logits,Y)
-    return loss
+	logits = predict(X,C,W1,b1,W2,b2)
+	Yoh = Flux.onehotbatch(Y,1:27)'
+	loss = Flux.logitcrossentropy(logits,Yoh,dims=2)
+	# alternately
+	#loss = Flux.logitcrossentropy(Flux.softmax(logits),Yoh,dims=2)
+	return loss
 end
 
 n1 = 8*length(words)÷10
@@ -72,11 +71,12 @@ Xsm,Ysm = build_dataset(words[1:100])
 C = randn(27,embedding_depth)  # Build embedding lookup table C.
 
 W1 = randn(6,100)
-b1 = randn(100)'
+b1 = randn(1,100)
 
 W2 = randn(100,27)
-b2 = randn(27)'
+b2 = randn(1,27)
 
+emb = C[Xsm,:]
 
 ps = Flux.params(C,W1,b1,W2,b2)
 
@@ -87,15 +87,13 @@ loss_history = []
 
 epochs = 50
 
-# TODO: get code working with minibatched. Currently works with Xsm, but runs 
-# out of memory for larger inputs.
-Xin,Yin = Xsm,Ysm
-size(Xin)
-size(Yin)
-#data = [(Xin,Yin)] # no minibatches
-data = DataLoader((Xin,Yin),batchsize=50,partial=false)
+Xin,Yin = Xtr,Ytr
+# Manually do the batching
+bsize = 32
+
 for epoch in 1:epochs
-    train!(mloss, ps, data, opt)
+	ix = rand(1:length(Yin),bsize)
+    Flux.train!(mloss, ps, [(Xin[ix,:],Yin[ix])], opt)
     train_loss = mloss(Xin, Yin)
     push!(loss_history, train_loss)
     println("Epoch = $epoch: Training Loss = $train_loss")
