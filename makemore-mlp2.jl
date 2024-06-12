@@ -87,11 +87,13 @@ loss_history = []
 
 epochs = 50
 
-Xin,Yin = Xsm,Ysm
-data = [(Xin,Yin)] # no minibatches
-#data = DataLoader((Xin,Yin),batchsize=50,partial=false)
+Xin,Yin = Xtr,Ytr
+# Manually do the batching
+bsize = 32
+
 for epoch in 1:epochs
-    Flux.train!(mloss, ps, data, opt)
+	ix = rand(1:length(Yin),bsize)
+    Flux.train!(mloss, ps, [(Xin[ix,:],Yin[ix])], opt)
     train_loss = mloss(Xin, Yin)
     push!(loss_history, train_loss)
     println("Epoch = $epoch: Training Loss = $train_loss")
