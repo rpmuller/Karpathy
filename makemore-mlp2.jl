@@ -8,7 +8,6 @@
 # "now made respectable" comment
 
 using Flux
-using Flux: train!, params, gradient, crossentropy, softmax, DataLoader
 using Statistics
 
 # hyperparameters
