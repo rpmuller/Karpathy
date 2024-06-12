@@ -49,8 +49,7 @@ end
 # Forward pass
 function predict(X,C,W1,b1,W2,b2)
 	emb = C[X,:]
-	n = length(emb)÷(n_embed*block_size)
-	h = tanh.(reshape(emb,(n, n_embed*block_size))*W1 .+ b1)
+	h = tanh.(reshape(emb, :, n_embed*block_size)*W1 .+ b1)
     return h*W2 .+ b2
 end
 
@@ -87,7 +86,7 @@ learning_rate = 0.01
 opt = ADAM(learning_rate)
 loss_history = []
 
-epochs = 500
+epochs = 5000
 batch_size = 32 # Manually do the batching
 
 for epoch in 1:epochs
@@ -103,16 +102,6 @@ plot(loss_history)
 mloss(Xtr,Ytr)
 mloss(Xdev,Ydev)
 mloss(Xte,Yte)
-
-# This isn't quite working, but is what is supposed to go into sample()
-context = ones(Int64,block_size)
-C
-emb = C[context,:]
-length(emb)
-predict(context,C,W1,b1,W2,b2)
-h = tanh.(reshape(emb,(1, 30))*W1 .+ b1)
-logits =  h*W2 .+ b2
-wsample(1:27,Flux.softmax(logits[1,:]))
 
 function sample()
 	out = []
