@@ -106,7 +106,10 @@ mloss(Xtr,Ytr)
 mloss(Xdev,Ydev)
 mloss(Xte,Yte)
 
-C
+# This isn't quite working, but is what is supposed to go into sample()
+context = ones(Int64,block_size)
+C[context,:]
+predict(C[context],C,W1,b1,W2,b2)
 
 function sample()
 	out = []
@@ -116,6 +119,7 @@ function sample()
 		logits = predict(emb,C, W1, b1, W2, b2)
 		probs = Flux.softmax(logits)
 		ix = #how do I do the multinomial sample ?
+		context = vcat(context[2:end],[ix])
 		push!(out,ix)
 		if ix == 1 break end
 	end
