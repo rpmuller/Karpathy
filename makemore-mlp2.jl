@@ -74,11 +74,12 @@ n_hidden = 200     # neurons in the MLP hidden layer
 
 C = randn(vocab_size,n_embed)  # Build embedding lookup table C.
 
+# Scaling initial values by small factor for faster optimization
+scalef = 0.05
 W1 = randn(n_embed * block_size, n_hidden)
-b1 = randn(1,n_hidden)
-
-W2 = randn(n_hidden,vocab_size)
-b2 = randn(1,vocab_size)
+b1 = randn(1,n_hidden) * scalef
+W2 = randn(n_hidden,vocab_size) * scalef
+b2 = randn(1,vocab_size) * scalef
 
 ps = Flux.params(C,W1,b1,W2,b2)
 
