@@ -9,7 +9,7 @@
 # [makemore part 3 video](https://www.youtube.com/watch?v=P6sfmUTpUmc&t=503s)
 
 using Flux
-using Statistics
+using StatsBase
 using Plots
 
 
@@ -49,7 +49,8 @@ end
 # Forward pass
 function predict(X,C,W1,b1,W2,b2)
 	emb = C[X,:]
-	h = tanh.(reshape(emb,(size(emb,1), n_embed*block_size))*W1 .+ b1)
+	n = length(emb)÷(n_embed*block_size)
+	h = tanh.(reshape(emb,(n, n_embed*block_size))*W1 .+ b1)
     return h*W2 .+ b2
 end
 
@@ -67,7 +68,6 @@ n2 = 9*length(words)÷10
 Xtr,Ytr = build_dataset(words[1:n1])
 Xdev,Ydev = build_dataset(words[n1:n2])
 Xte,Yte = build_dataset(words[n2:end])
-#Xsm,Ysm = build_dataset(words[1:100])
 
 # hyperparameters
 n_embed = 10        # dimension of the character embedding
@@ -80,8 +80,6 @@ b1 = randn(1,n_hidden)
 
 W2 = randn(n_hidden,vocab_size)
 b2 = randn(1,vocab_size)
-
-emb = C[Xsm,:]
 
 ps = Flux.params(C,W1,b1,W2,b2)
 
@@ -108,20 +106,26 @@ mloss(Xte,Yte)
 
 # This isn't quite working, but is what is supposed to go into sample()
 context = ones(Int64,block_size)
-C[context,:]
-predict(C[context],C,W1,b1,W2,b2)
+C
+emb = C[context,:]
+length(emb)
+predict(context,C,W1,b1,W2,b2)
+h = tanh.(reshape(emb,(1, 30))*W1 .+ b1)
+logits =  h*W2 .+ b2
+wsample(1:27,Flux.softmax(logits[1,:]))
 
 function sample()
 	out = []
 	context = ones(Int64,block_size)
 	while true
-		emb = C[context,] #???
-		logits = predict(emb,C, W1, b1, W2, b2)
-		probs = Flux.softmax(logits)
-		ix = #how do I do the multinomial sample ?
+		emb = C[context,:]
+		logits = predict(context,C, W1, b1, W2, b2)
+		ix = wsample(1:27,Flux.softmax(logits[1,:]))
 		context = vcat(context[2:end],[ix])
 		push!(out,ix)
 		if ix == 1 break end
 	end
-	return [itos[i] for i in out]
+	return string([itos[i] for i in out[1:end-1]]...)
 end
+
+sample()
