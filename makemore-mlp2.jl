@@ -12,18 +12,6 @@ using Flux
 using StatsBase
 using Plots
 
-
-# Read names.txt into words array:
-words = split(read("names.txt",String),"\n")
-
-# Create character embeddings.
-chars = ".abcdefghijklmnopqrstuvwxyz"
-stoi = Dict( s => i for (i,s) in enumerate(chars))
-itos = Dict( i => s for (i,s) in enumerate(chars))
-vocab_size = length(itos)
-
-# Compile dataset for neural net:
-block_size = 3         # context length: how many chars to we use to predict next one?
 function build_dataset(words)
 	X0 = []
 	Y::Array{Int64} = []
@@ -43,7 +31,6 @@ function build_dataset(words)
     	X[i,:] = X0[i]
 	end
 	return X,Vector(Y) # note transpose
-	#return X,Y' # note transpose
 end
 
 # Forward pass
@@ -56,21 +43,46 @@ end
 function mloss(X,Y)
 	logits = predict(X,C,W1,b1,W2,b2)
 	Yoh = Flux.onehotbatch(Y,1:vocab_size)'
-	loss = Flux.logitcrossentropy(logits,Yoh,dims=2)
 	# alternately
-	#loss = Flux.logitcrossentropy(Flux.softmax(logits),Yoh,dims=2)
-	return loss
+	#return Flux.logitcrossentropy(Flux.softmax(logits),Yoh,dims=2)
+	return Flux.logitcrossentropy(logits,Yoh,dims=2)
 end
+
+function sample()
+	out = []
+	context = ones(Int64,block_size)
+	while true
+		emb = C[context,:]
+		logits = predict(context,C, W1, b1, W2, b2)
+		ix = wsample(1:27,Flux.softmax(logits[1,:]))
+		context = vcat(context[2:end],[ix])
+		push!(out,ix)
+		if ix == 1 break end
+	end
+	return string([itos[i] for i in out[1:end-1]]...)
+end
+
+
+# Read names.txt into words array:
+words = split(read("names.txt",String),"\r\n")
+
+# Create character embeddings.
+chars = ".abcdefghijklmnopqrstuvwxyz"
+stoi = Dict( s => i for (i,s) in enumerate(chars))
+itos = Dict( i => s for (i,s) in enumerate(chars))
+vocab_size = length(itos)
+
+# hyperparameters
+block_size = 3         # context length: how many chars to we use to predict next one?
+n_embed = 10        # dimension of the character embedding
+n_hidden = 200     # neurons in the MLP hidden layer
+
 
 n1 = 8*length(words)÷10
 n2 = 9*length(words)÷10
 Xtr,Ytr = build_dataset(words[1:n1])
 Xdev,Ydev = build_dataset(words[n1:n2])
 Xte,Yte = build_dataset(words[n2:end])
-
-# hyperparameters
-n_embed = 10        # dimension of the character embedding
-n_hidden = 200     # neurons in the MLP hidden layer
 
 C = randn(vocab_size,n_embed)  # Build embedding lookup table C.
 
@@ -103,19 +115,5 @@ plot(loss_history)
 mloss(Xtr,Ytr)
 mloss(Xdev,Ydev)
 mloss(Xte,Yte)
-
-function sample()
-	out = []
-	context = ones(Int64,block_size)
-	while true
-		emb = C[context,:]
-		logits = predict(context,C, W1, b1, W2, b2)
-		ix = wsample(1:27,Flux.softmax(logits[1,:]))
-		context = vcat(context[2:end],[ix])
-		push!(out,ix)
-		if ix == 1 break end
-	end
-	return string([itos[i] for i in out[1:end-1]]...)
-end
 
 sample()
