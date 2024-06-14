@@ -1,8 +1,8 @@
 # Redo makemore-mlp2 but using more standard Flux
 # Chains of built-in layers.
 
-using Flux
 using StatsBase
+using Flux
 
 function build_dataset(words)
 	X0 = []
@@ -37,7 +37,7 @@ function get_name(model)
     out = []
     context = ones(Int64,block_size)
     while true
-        logits = model(context)
+        logits = model(reshape(context,1,3))
         ix = get_char_ix(logits)
         context = vcat(context[2:end],[ix])
         push!(out,ix)
@@ -72,21 +72,25 @@ Xsm,Ysm = build_dataset(words[1:100])
 # number of char inputs and puts them into a 30-d space.
 
 model = Chain(
-    Flux.EmbeddingBag(27 => 30),
+    Flux.Embedding(27 => 10),
+	Flux.flatten,
     Dense(30 => 100, tanh),
     Dense(100 => 27)
 )
 ps = Flux.params(model)
+
+#emb = Embedding(27 => 10)
+#Flux.flatten(emb(Xsm'))
 
 # Optimize the model
 opt = ADAM(0.01)
 batch_size = 50
 
 Xin,Yin = Xtr,Ytr
-
-for epoch in 1:500
+Yoh = Flux.onehotbatch(Yin,1:27)
+for epoch in 1:50
     ix = rand(1:length(Yin),batch_size)
-    Flux.train!(loss,ps,[(Xin[ix,:],Flux.onehotbatch(Yin[ix],1:27))],opt)
+    Flux.train!(loss,ps,[(Xin[ix,:],Yoh[:,ix])],opt)
     train_loss = loss(Xin,Yoh)
     println("$epoch: $train_loss")
 end
