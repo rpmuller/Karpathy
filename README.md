@@ -10,5 +10,6 @@ Why Julia? It's fast, elegant, and just as readable as Python. (Although switchi
 
 There's a lot of work going on to rewrite everything in C to have fast code and simple access to GPUs. A lot of this could just as easily be done in Julia and produce easier to understand code that will (hopefully) be just as fast.
 
-Tasks
-- Finish cleaning directories: make sure all jupyter notebooks are converted to julia and then delete, since they don't sync well.
+
+This might be useful in the long run: 
+[MinGPT in Julia using Flux](https://cancandan.github.io/julia/flux/machine-learning/2022/03/30/mingpt-julia.html)
