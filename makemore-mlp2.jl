@@ -48,11 +48,12 @@ function mloss(X,Y)
 	return Flux.logitcrossentropy(logits,Yoh,dims=2)
 end
 
+# get_char_ix(logits) = wsample(1:27,Flux.softmax(logits[1,:])
+
 function sample()
 	out = []
 	context = ones(Int64,block_size)
 	while true
-		emb = C[context,:]
 		logits = predict(context,C, W1, b1, W2, b2)
 		ix = wsample(1:27,Flux.softmax(logits[1,:]))
 		context = vcat(context[2:end],[ix])
@@ -83,6 +84,7 @@ n2 = 9*length(words)÷10
 Xtr,Ytr = build_dataset(words[1:n1])
 Xdev,Ydev = build_dataset(words[n1:n2])
 Xte,Yte = build_dataset(words[n2:end])
+
 
 C = randn(vocab_size,n_embed)  # Build embedding lookup table C.
 
