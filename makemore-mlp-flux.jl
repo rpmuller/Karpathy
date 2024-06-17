@@ -34,7 +34,7 @@ function get_name(model)
     out = []
     context = ones(Int64,block_size)
     while true
-        logits = model(reshape(context,3,1))
+        logits = model(reshape(context,block_size,1))
         ix = get_char_ix(vec(logits))
         context = vcat(context[2:end],[ix])
         push!(out,ix)
@@ -53,7 +53,7 @@ chars = ".abcdefghijklmnopqrstuvwxyz"
 stoi = Dict( s => i for (i,s) in enumerate(chars))
 vocab_size = length(chars)
 
-block_size = 3
+block_size = 8
 
 n1 = 8*length(words)÷10
 n2 = 9*length(words)÷10
@@ -68,11 +68,17 @@ n_hidden = 100
 model = Chain(
     Flux.Embedding(vocab_size => n_embedding),
 	Flux.flatten,
-    Dense(block_size*n_embedding => n_hidden,bias=false),
-	BatchNorm(n_hidden,tanh),
-    Dense(n_hidden => vocab_size)
+
+	# Not certain BatchNorm is helping things, but maybe I'm using it wrong.
+    #Dense(block_size*n_embedding => n_hidden,bias=false), 
+	#BatchNorm(n_hidden,tanh),
+    Dense(block_size*n_embedding => n_hidden,tanh),
+    
+	Dense(n_hidden => vocab_size)
 )
 ps = Flux.params(model)
+
+model[3]
 
 # Optimize the model
 opt = ADAM(0.01)
