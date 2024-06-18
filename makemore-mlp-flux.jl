@@ -24,21 +24,18 @@ function build_dataset(words)
 	end
 	return X,vec(Y) # note transpose
 end
-block_size = 3
 
 get_char_ix(logits) = wsample(1:27,softmax(logits))
 get_char(logits) = chars[get_char_ix(logits)]
 
-get_char_ix(logits)
-get_char(logits)
-stringify(ixs) = string([itos[ix] for ix in ixs[1:end-1]]...)
+stringify(ixs) = string([chars[ix] for ix in ixs[1:end-1]]...)
 
 function get_name(model)
     out = []
     context = ones(Int64,block_size)
     while true
-        logits = model(reshape(context,1,3))
-        ix = get_char_ix(logits)
+        logits = model(reshape(context,block_size,1))
+        ix = get_char_ix(vec(logits))
         context = vcat(context[2:end],[ix])
         push!(out,ix)
         if ix == 1 break end
@@ -46,17 +43,17 @@ function get_name(model)
     return stringify(out)
 end
 
-get_name(model)
 loss(X,Yoh) = Flux.logitcrossentropy(model(X'),Yoh)
 
 # Read names.txt into words array:
-words = split(read("names.txt",String),"\n")
+words = split(read("names.txt",String),"\r\n")
 
 # Create character embeddings.
 chars = ".abcdefghijklmnopqrstuvwxyz"
 stoi = Dict( s => i for (i,s) in enumerate(chars))
-itos = Dict( i => s for (i,s) in enumerate(chars))
-vocab_size = length(itos)
+vocab_size = length(chars)
+
+block_size = 8
 
 n1 = 8*length(words)÷10
 n2 = 9*length(words)÷10
@@ -66,21 +63,22 @@ Xte,Yte = build_dataset(words[n2:end])
 Xsm,Ysm = build_dataset(words[1:100])
 
 # Build a model
-# I'm not really sure I'm using an embeddingbag correctly
-# here. In the previous MLP study, I had 3 encoders that took 
-# 27 chars to a space of 2-10. Here the eb encoder takes any 
-# number of char inputs and puts them into a 30-d space.
-
+n_embedding = 10
+n_hidden = 100
 model = Chain(
-    Flux.Embedding(27 => 10),
+    Flux.Embedding(vocab_size => n_embedding),
 	Flux.flatten,
-    Dense(30 => 100, tanh),
-    Dense(100 => 27)
+
+	# Not certain BatchNorm is helping things, but maybe I'm using it wrong.
+    #Dense(block_size*n_embedding => n_hidden,bias=false), 
+	#BatchNorm(n_hidden,tanh),
+    Dense(block_size*n_embedding => n_hidden,tanh),
+    
+	Dense(n_hidden => vocab_size)
 )
 ps = Flux.params(model)
 
-#emb = Embedding(27 => 10)
-#Flux.flatten(emb(Xsm'))
+model[3]
 
 # Optimize the model
 opt = ADAM(0.01)
