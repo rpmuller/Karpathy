@@ -23,8 +23,8 @@ batch_size = 4 # independent sequences will we process in parallel?
 function get_batch(split)
 	data = split == "train" ? train_data : val_data
 	ix = rand(1:length(data)-block_size,batch_size)
-	x = stack([data[i:i+block_size-1] for i in ix])
-	y = stack([data[i+1:i+block_size] for i in ix])
+	x = [data[ix[i]+j-1] for i in 1:batch_size, j in 1:block_size]
+	y = [data[ix[i]+j] for i in 1:batch_size, j in 1:block_size]
 	return x,y
 end
 
