@@ -1,12 +1,6 @@
-# Can't get this to work. Supposedly if 
-# the Julia extension is installed in vs code
-# you can open a Julia file in Pluto.
+using Statistics
 
-# There is a Pluto extension that I'm not
-# going to mess with now.
+B,T,C  = 4,8,2
+x = randn(B,T,C)
 
-a = 1:24
-b = [2,7,9,3]
-a[b]
-
-rand(1:687,10)
+mean(x[1,1:3,:])
