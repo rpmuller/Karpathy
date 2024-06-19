@@ -5,24 +5,18 @@ using StatsBase
 using Flux
 
 function build_dataset(words)
-	X0 = []
+	X = []
 	Y::Array{Int64} = []
 	for w in words
 		context = ones(Int64,block_size)
 		for ch in string(w,".")
 			ix = stoi[ch]
-			push!(X0,context)
+			push!(X,context)
 			push!(Y,ix)
 			context = vcat(context[2:end],[ix])
 		end
 	end
-	nrows = length(X0)
-	ncols = length(X0[1])
-	X = zeros(Int64,nrows,ncols)
-	for i in 1:nrows
-    	X[i,:] = X0[i]
-	end
-	return X,vec(Y) # note transpose
+	return vcat(transpose.(X)...),vec(Y)
 end
 
 get_char_ix(logits) = wsample(1:27,softmax(logits))
@@ -53,7 +47,7 @@ chars = ".abcdefghijklmnopqrstuvwxyz"
 stoi = Dict( s => i for (i,s) in enumerate(chars))
 vocab_size = length(chars)
 
-block_size = 8
+block_size = 3
 
 n1 = 8*length(words)÷10
 n2 = 9*length(words)÷10
@@ -62,6 +56,10 @@ Xdev,Ydev = build_dataset(words[n1:n2])
 Xte,Yte = build_dataset(words[n2:end])
 Xsm,Ysm = build_dataset(words[1:100])
 
+Xsm[9,:]
+
+
+Xsm
 # Build a model
 n_embedding = 10
 n_hidden = 100

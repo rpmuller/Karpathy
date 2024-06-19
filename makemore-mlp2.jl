@@ -13,24 +13,18 @@ using StatsBase
 using Plots
 
 function build_dataset(words)
-	X0 = []
+	X = []
 	Y::Array{Int64} = []
 	for w in words
 		context = ones(Int64,block_size)
 		for ch in string(w,".")
 			ix = stoi[ch]
-			push!(X0,context)
+			push!(X,context)
 			push!(Y,ix)
 			context = vcat(context[2:end],[ix])
 		end
 	end
-	nrows = length(X0)
-	ncols = length(X0[1])
-	X = zeros(Int64,nrows,ncols)
-	for i in 1:nrows
-    	X[i,:] = X0[i]
-	end
-	return X,Vector(Y) # note transpose
+	return vcat(transpose.(X)...),vec(Y) # note transpose
 end
 
 # Forward pass
